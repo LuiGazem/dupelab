@@ -13,14 +13,21 @@ const FALLBACK_DB = [
 
 async function fetchProducts(category) {
   if (!SUPABASE_URL || !SUPABASE_ANON) return null;
-  let url = `${SUPABASE_URL}/rest/v1/products?select=*&limit=2000`;
-  if (category && category !== "All") url += `&category=eq.${encodeURIComponent(category)}`;
-  const res = await fetch(url, {
-    headers: { "apikey": SUPABASE_ANON, "Authorization": `Bearer ${SUPABASE_ANON}` },
-  });
-  if (!res.ok) throw new Error(`${res.status}`);
-  const data = await res.json();
-  return data.map(p => ({
+  const headers = { "apikey": SUPABASE_ANON, "Authorization": `Bearer ${SUPABASE_ANON}` };
+  const PAGE = 1000;
+  let all = [], offset = 0;
+  while (true) {
+    let url = `${SUPABASE_URL}/rest/v1/products?select=*&limit=${PAGE}&offset=${offset}`;
+    if (category && category !== "All") url += `&category=eq.${encodeURIComponent(category)}`;
+    const res = await fetch(url, { headers });
+    if (!res.ok) throw new Error(`${res.status}`);
+    const page = await res.json();
+    if (!page.length) break;
+    all = all.concat(page);
+    if (page.length < PAGE) break;
+    offset += PAGE;
+  }
+  return all.map(p => ({
     ...p,
     price_per_oz: p.price_per_oz || 0,
     ingredients: typeof p.ingredients === "string"
@@ -209,14 +216,17 @@ export default function App() {
 
   useEffect(() => {
     if (!SUPABASE_URL || !SUPABASE_ANON) { setDbStatus("fallback"); return; }
-    fetch(`${SUPABASE_URL}/rest/v1/products?select=_dlt_id,category`, {
-      headers:{"apikey":SUPABASE_ANON,"Authorization":`Bearer ${SUPABASE_ANON}`},
+    fetch(`${SUPABASE_URL}/rest/v1/products?select=_dlt_id&limit=1`, {
+      headers:{
+        "apikey": SUPABASE_ANON,
+        "Authorization": `Bearer ${SUPABASE_ANON}`,
+        "Prefer": "count=exact",
+      },
     })
-    .then(r=>r.json())
-    .then(data=>{
-      setDbCount(data.length);
-      const cats = ["All",...new Set(data.map(p=>p.category).filter(Boolean))].sort();
-      setCategories(cats);
+    .then(r => {
+      const range = r.headers.get("content-range"); // e.g. "0-0/14182"
+      const total = range ? parseInt(range.split("/")[1]) : 0;
+      setDbCount(total);
       setDbStatus("live");
     })
     .catch(()=>setDbStatus("fallback"));
