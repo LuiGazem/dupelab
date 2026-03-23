@@ -209,7 +209,7 @@ export default function App() {
 
   useEffect(() => {
     if (!SUPABASE_URL || !SUPABASE_ANON) { setDbStatus("fallback"); return; }
-    fetch(`${SUPABASE_URL}/rest/v1/products?select=id,category`, {
+    fetch(`${SUPABASE_URL}/rest/v1/products?select=_dlt_id,category`, {
       headers:{"apikey":SUPABASE_ANON,"Authorization":`Bearer ${SUPABASE_ANON}`},
     })
     .then(r=>r.json())
@@ -355,7 +355,7 @@ export default function App() {
               </select>
             </div>
             {sorted.length > 0
-              ? <div className="results-grid">{sorted.map((r,i)=><ResultCard key={r.product.id||i} product={r.product} matchData={r.matchData} referencePrice={r.avgPricePerOz} index={i}/>)}</div>
+              ? <div className="results-grid">{sorted.map((r,i)=><ResultCard key={r.product._dlt_id||i} product={r.product} matchData={r.matchData} referencePrice={r.avgPricePerOz} index={i}/>)}</div>
               : <div className="empty-state"><div className="empty-icon">🔍</div><div className="empty-title">No matches found</div><div className="empty-sub">Try "All" categories or check your ingredient formatting.</div></div>
             }
           </>}
