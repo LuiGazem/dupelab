@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from "react";
+import BarcodeScanner from "./BarcodeScanner";
 
 const SUPABASE_URL  = import.meta.env.VITE_SUPABASE_URL || "";
 const SUPABASE_ANON = import.meta.env.VITE_SUPABASE_ANON_KEY || "";
@@ -212,6 +213,7 @@ export default function App() {
   const [dbCount, setDbCount] = useState(0);
   const [categories, setCategories] = useState(["All","Moisturizer","Serum","Toner","Exfoliant","Sunscreen","Cleanser","Eye Cream","Makeup","Anti-Aging","Vitamin C","Retinol","Mask","Face Oil","Other"]);
   const [isSearching, setIsSearching] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const fileInputRef = useRef();
 
   useEffect(() => {
@@ -313,7 +315,7 @@ export default function App() {
               </div>
 
               <div className="card">
-                <div className="card-header"><div className="step-num">2</div><div className="card-title">Or upload a .txt file</div></div>
+                <div className="card-header"><div className="step-num">2</div><div className="card-title">Or upload / scan</div></div>
                 <div className="card-body">
                   <div className={`upload-zone ${isDragOver?"drag":""}`}
                     onDragOver={e=>{e.preventDefault();setIsDragOver(true)}}
@@ -325,6 +327,9 @@ export default function App() {
                     <div className="upload-sub">.txt — ingredients one per line or comma-separated</div>
                     <input ref={fileInputRef} type="file" accept=".txt,.csv" onChange={e=>handleFile(e.target.files[0])}/>
                   </div>
+                  <button className="btn-ghost" style={{marginTop:"12px",width:"100%",justifyContent:"center"}} onClick={()=>setShowScanner(true)}>
+                    📷 Scan Barcode
+                  </button>
                 </div>
               </div>
             </div>
@@ -371,6 +376,15 @@ export default function App() {
           </>}
         </main>
       </div>
+      {showScanner && (
+        <BarcodeScanner
+          onClose={() => setShowScanner(false)}
+          onIngredientsFound={ings => {
+            setIngredientText(ings);
+            setShowScanner(false);
+          }}
+        />
+      )}
     </>
   );
 }
